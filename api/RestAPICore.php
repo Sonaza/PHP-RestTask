@@ -41,7 +41,8 @@ class RestAPICore
 		// Retrieve request URI and split it into segments.
 		// First part should be the route we're looking for and
 		// the rest are arguments that will be given to the provider method.
-		$uri_segments = explode('/', Helpers::getRequestUri());
+		$request_uri = substr(Helpers::getRequestUri(), 1); // Remove preceding slash
+		$uri_segments = explode('/', $request_uri);
 		$route_path = array_shift($uri_segments);
 		
 		// Verify the path is registered.

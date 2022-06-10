@@ -18,6 +18,15 @@ class BooksProvider
 			];
 		}
 		
+		$isbn = $this->normalize_isbn($isbn);
+		if (!$this->is_valid_isbn($isbn))
+		{
+			return [
+				'success' => false,
+				'error' => "Supplied ISBN is not valid.",
+			];
+		}
+		
 		$url = BooksProvider::BASE_ENDPOINT_URL . '/isbn/' . $isbn . '.json';
 		
 		try
@@ -129,6 +138,40 @@ class BooksProvider
 		];
 	}
 	
+	private function normalize_isbn(string $isbn): string
+	{
+		return str_replace(['-', ' '], '', trim($isbn));
+	}
+	
+	private function is_valid_isbn(string $isbn): bool
+	{
+		$isbn = str_split($isbn);
+		
+		if (count($isbn) == 10)
+		{
+			foreach ($isbn as &$v) $v = intval($v);
+			
+			$sum = $isbn[0] * 10 + $isbn[1] * 9 + $isbn[2] * 8 + $isbn[3] * 7 + $isbn[4] * 6 + 
+			       $isbn[5] * 5  + $isbn[6] * 4 + $isbn[7] * 3 + $isbn[8] * 2 + $isbn[9] * 1;
+			
+			return $sum % 11 == 0;
+		}
+		else if (count($isbn) == 13)
+		{
+			foreach ($isbn as &$v) $v = intval($v);
+			
+			$sum = $isbn[0]  * 1 + $isbn[1] * 3 + $isbn[2]  * 1 + $isbn[3]  * 3 +
+			       $isbn[4]  * 1 + $isbn[5] * 3 + $isbn[6]  * 1 + $isbn[7]  * 3 +
+			       $isbn[8]  * 1 + $isbn[9] * 3 + $isbn[10] * 1 + $isbn[11] * 3 +
+			       $isbn[12] * 1;
+			
+			return $sum % 10 == 0;
+		}
+		else
+		{
+			return false;
+		}
+	}
 	
 	private function get_additional_information(string $information_key): array
 	{

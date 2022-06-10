@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+class RequestsCurlRequestFailedException extends Exception {}
 class RequestsInvalidJSONException extends Exception {}
 
 class Requests
@@ -44,7 +45,16 @@ class Requests
 			])
 		);
 		
+		// echo $url . "\n\n";
+		
 		$response = curl_exec($curl);
+		if ($response === false)
+		{
+			throw new RequestsCurlRequestFailedException("cURL request failed: " . curl_error($curl));
+		}
+		
+		$status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+		$effective_url = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
 		
 		$header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
 		
@@ -58,9 +68,6 @@ class Requests
 		
 		// Extract response content
 		$response_body = substr($response, $header_size);
-		
-		$status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-		$effective_url = curl_getinfo($curl, CURLINFO_EFFECTIVE_URL);
 		
 		curl_close($curl);
 		
