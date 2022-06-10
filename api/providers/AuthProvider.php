@@ -14,7 +14,7 @@ class AuthProvider
 		{
 			if ($body['username'] == 'testuser' && $body['password'] == 'password')
 			{
-				$token = JSONWebTokenManager::make_token(
+				$token = JSONWebToken::create(
 				[
 					'username' => $body['username'],
 				], 'HS256');
@@ -36,7 +36,7 @@ class AuthProvider
 		$bearer_token = Helpers::getAuthorizationBearerToken();
 		if (is_null($bearer_token)) return false;
 		
-		return JSONWebTokenManager::verify_token($bearer_token);
+		return JSONWebToken::verify($bearer_token);
 	}
 	
 }

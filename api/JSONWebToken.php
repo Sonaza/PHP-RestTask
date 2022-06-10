@@ -7,21 +7,21 @@ require_once "Base64Url.php";
 class HashNotSupportedException extends Exception {}
 class InternalErrorException extends Exception {}
 
-class JSONWebTokenManager
+class JSONWebToken
 {
 	const SUPPORTED_ALGORITHMS = [
 		'HS256' => 'sha256',
 	];
 	
-	static public function make_token(array $payload = [], string $hash_algo = "HS256"): string
+	static public function create(array $payload = [], string $hash_algo = "HS256"): string
 	{
 		// Verify the requested algorithm is supported
 		$hash_algo = strtoupper($hash_algo);
-		if (!array_key_exists($hash_algo, JSONWebTokenManager::SUPPORTED_ALGORITHMS))
+		if (!array_key_exists($hash_algo, JSONWebToken::SUPPORTED_ALGORITHMS))
 		{
 			throw new HashNotSupportedException("Algorithm '$hash_algo' is not supported.");
 		}
-		$hmac_algo = JSONWebTokenManager::SUPPORTED_ALGORITHMS[$hash_algo];
+		$hmac_algo = JSONWebToken::SUPPORTED_ALGORITHMS[$hash_algo];
 		
 		// Create header and payload arrays
 		$header = [
@@ -32,6 +32,7 @@ class JSONWebTokenManager
 		$payload = array_merge($payload,
 		[
 			"iat" => time(),
+			"nbf" => time(),
 		]);
 		
 		$header_base64  = Base64Url::encode(json_encode($header));
@@ -58,7 +59,7 @@ class JSONWebTokenManager
 		return $header_base64 . '.' . $payload_base64 . '.' . $signature_base64;
 	}
 	
-	static public function verify_token(string $token): bool
+	static public function verify(string $token): bool
 	{
 		$token_segments = explode('.', $token, 3);
 		if ($token_segments === false || count($token_segments) != 3)
@@ -82,11 +83,11 @@ class JSONWebTokenManager
 		
 		// Retrieve used hash algo and verify it is supported
 		$hash_algo = strtoupper($header['alg']);
-		if (!array_key_exists($hash_algo, JSONWebTokenManager::SUPPORTED_ALGORITHMS))
+		if (!array_key_exists($hash_algo, JSONWebToken::SUPPORTED_ALGORITHMS))
 		{
 			throw new HashNotSupportedException("Algorithm '$hash_algo' is not supported.");
 		}
-		$hmac_algo = JSONWebTokenManager::SUPPORTED_ALGORITHMS[$hash_algo];
+		$hmac_algo = JSONWebToken::SUPPORTED_ALGORITHMS[$hash_algo];
 		
 		// Confirming that the supplied signature hash matches
 		$hash_binary = hash_hmac(

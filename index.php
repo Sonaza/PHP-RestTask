@@ -16,21 +16,33 @@ class Client
 	
 	private function autoload($class_name)
 	{
-		if (file_exists($class_name . ".php"))
+		if (file_exists(__DIR__ . '/' . $class_name . ".php"))
 		{
-			require_once $class_name . ".php";
+			require_once __DIR__ . '/' . $class_name . ".php";
 		}
 	}
 	
 	private function get_jwt_token(string $username, string $password): ?string
 	{
-		$data = [
+		$request_data = [
 			'username' => $username,
 			'password' => $password,
 		];
 		
-		$url = $this->base_endpoint_url . "/login";
-		$response = Requests::post_json($url, $data);
+		$request_headers = [
+			'User-Agent: Lamia Test Thingy',
+		];
+		
+		$request_url = $this->base_endpoint_url . "/login";
+		
+		try
+		{
+			$response = Requests::post_json($request_url, $request_data, $request_headers);
+		}
+		catch (RequestsInvalidJSONException $e)
+		{
+			return null;
+		}
 		
 		if ($response['status_code'] != 200 || $response['content']['success'] === false)
 		{
@@ -44,6 +56,7 @@ class Client
 	{
 		$request_headers = [
 			'Authorization: Bearer ' . $jwt_token,
+			'User-Agent: Lamia Test Thingy',
 		];
 		
 		try
@@ -81,18 +94,19 @@ class Client
 			'movies_response' => '',
 		];
 		
-		header("Content-type: text/plain; charset=utf-8");
-		
 		$data['jwt_token'] = $this->get_jwt_token($data['jwt_username'], $data['jwt_password']);
 		
+		// If auth token could not be obtained then making the requests won't be possible.
 		if (!is_null($data['jwt_token']))
 		{
+			// Retrieve book info by ISBN
 			$request_url = $this->base_endpoint_url . "/getBook";
 			$request_data = [
 				'isbn' => $data['books_isbn'],
 			];
 			$data['books_response'] = $this->make_data_query($request_url, $request_data, $data['jwt_token']);
 			
+			// Retrieve movie info by title and year,
 			$request_url = $this->base_endpoint_url . "/getMovie";
 			$request_data = [
 				'title' => $data['movies_title'],

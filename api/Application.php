@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once "Bootstrap.php";
+
 class Application
 {
 	
@@ -26,3 +28,6 @@ class Application
 	}
 	
 }
+
+$app = new Application();
+$app->run();
