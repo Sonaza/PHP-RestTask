@@ -10,4 +10,5 @@ require_once "Input.php";
 
 require_once "JSONWebTokenManager.php";
 require_once "RestAPICore.php";
+require_once "Application.php";
 

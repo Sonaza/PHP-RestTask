@@ -5,11 +5,6 @@ declare(strict_types=1);
 class AuthProvider
 {
 	
-	public function __construct()
-	{
-		
-	}
-	
 	public function post_login(): array
 	{
 		$body = Helpers::getPostBody();

@@ -7,12 +7,7 @@ class MoviesProvider
 	
 	const ENDPOINT_URL = 'http://www.omdbapi.com/';
 	
-	public function __construct()
-	{
-		
-	}
-	
-	public function get_movie()
+	public function get_movie(): array
 	{
 		$data = [
 			'apikey' => Config::OMDB_SECRET_KEY,
@@ -52,18 +47,19 @@ class MoviesProvider
 			}
 		}
 		
-		$response = Requests::get(MoviesProvider::ENDPOINT_URL, $data);
-		
-		if ($response['status_code'] != 200)
+		try
 		{
-			return [
-				'success' => false,
-				'error' => "API response status code " . $response['status_code'],
-			];
+			$response = Requests::get_json(MoviesProvider::ENDPOINT_URL, $data);
+			
+			if ($response['status_code'] != 200)
+			{
+				return [
+					'success' => false,
+					'error' => "API response status code " . $response['status_code'],
+				];
+			}
 		}
-		
-		$content = json_decode($response['content'], true);
-		if (is_null($content))
+		catch (RequestsInvalidJSONException $e)
 		{
 			return [
 				'success' => false,
@@ -71,6 +67,7 @@ class MoviesProvider
 			];
 		}
 		
+		$content = $response['content'];
 		if ($content['Response'] === "False")
 		{
 			return [
@@ -81,7 +78,7 @@ class MoviesProvider
 		
 		return [
 			'success' => true,
-			'response' => $response['content'],
+			'response' => $content,
 		];
 	}	
 	
