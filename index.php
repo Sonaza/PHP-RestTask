@@ -29,15 +29,11 @@ class Client
 			'password' => $password,
 		];
 		
-		$request_headers = [
-			'User-Agent: Lamia Test Thingy',
-		];
-		
 		$request_url = $this->base_endpoint_url . "/login";
 		
 		try
 		{
-			$response = Requests::post_json($request_url, $request_data, $request_headers);
+			$response = Requests::post_json($request_url, $request_data);
 		}
 		catch (RequestsInvalidJSONException $e)
 		{
@@ -56,7 +52,6 @@ class Client
 	{
 		$request_headers = [
 			'Authorization: Bearer ' . $jwt_token,
-			'User-Agent: Lamia Test Thingy',
 		];
 		
 		try
