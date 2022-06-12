@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require_once "Base64Url.php";
 
-class HashNotSupportedException extends Exception {}
-class InternalErrorException extends Exception {}
+class JSONWebTokenHashNotSupportedException extends Exception {}
+class JSONWebTokenInternalErrorException extends Exception {}
 
 class JSONWebToken
 {
@@ -19,7 +19,7 @@ class JSONWebToken
 		$hash_algo = strtoupper($hash_algo);
 		if (!array_key_exists($hash_algo, JSONWebToken::SUPPORTED_ALGORITHMS))
 		{
-			throw new HashNotSupportedException("Algorithm '$hash_algo' is not supported.");
+			throw new JSONWebTokenHashNotSupportedException("Algorithm '$hash_algo' is not supported.");
 		}
 		$hmac_algo = JSONWebToken::SUPPORTED_ALGORITHMS[$hash_algo];
 		
@@ -39,7 +39,7 @@ class JSONWebToken
 		$payload_base64 = Base64Url::encode(json_encode($payload));
 		if ($header_base64 === false || $payload_base64 === false)
 		{
-			throw new InternalErrorException("Failed to Base64Url encode header/payload.");
+			throw new JSONWebTokenInternalErrorException("Failed to Base64Url encode header/payload.");
 		}
 		
 		// Create a signature and encode it
@@ -52,7 +52,7 @@ class JSONWebToken
 		$signature_base64 = Base64Url::encode($hash_binary);
 		if ($signature_base64 === false)
 		{
-			throw new InternalErrorException("Failed to Base64Url encode signature.");
+			throw new JSONWebTokenInternalErrorException("Failed to Base64Url encode signature.");
 		}
 		
 		// Great success, return a complete token
@@ -85,7 +85,7 @@ class JSONWebToken
 		$hash_algo = strtoupper($header['alg']);
 		if (!array_key_exists($hash_algo, JSONWebToken::SUPPORTED_ALGORITHMS))
 		{
-			throw new HashNotSupportedException("Algorithm '$hash_algo' is not supported.");
+			throw new JSONWebTokenHashNotSupportedException("Algorithm '$hash_algo' is not supported.");
 		}
 		$hmac_algo = JSONWebToken::SUPPORTED_ALGORITHMS[$hash_algo];
 		

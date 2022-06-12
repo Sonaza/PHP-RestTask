@@ -5,7 +5,7 @@ declare(strict_types=1);
 class AuthProvider
 {
 	
-	public function post_login(): array
+	public function post_login(): Response
 	{
 		$body = Helpers::getPostBody();
 		
@@ -19,22 +19,32 @@ class AuthProvider
 					'username' => $body['username'],
 				], 'HS256');
 				
-				return [
-					'success' => true,
-					'token'   => $token,
-				];
+				return new Response(
+					Response::STATUS_OK,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => true,
+						'token'   => $token,
+					]
+				);
 			}
 		}
 		
-		return [
-			'success' => false,
-		];
+		return new Response(
+			Response::STATUS_OK,
+			Response::CONTENT_TYPE_JSON,
+			[
+				'success' => false,
+				'error'   => 'Invalid credentials.',
+			]
+		);
 	}
 	
 	public function verify_authorization(): bool
 	{
 		$bearer_token = Helpers::getAuthorizationBearerToken();
-		if (is_null($bearer_token)) return false;
+		if (is_null($bearer_token))
+			return false;
 		
 		return JSONWebToken::verify($bearer_token);
 	}

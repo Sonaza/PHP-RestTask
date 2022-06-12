@@ -7,7 +7,7 @@ class MoviesProvider
 	
 	const ENDPOINT_URL = 'http://www.omdbapi.com/';
 	
-	public function get_movie(): array
+	public function get_movie(): Response
 	{
 		$data = [
 			'apikey' => Config::OMDB_SECRET_KEY,
@@ -20,10 +20,14 @@ class MoviesProvider
 		}
 		else
 		{
-			return [
-				'success' => false,
-				'error' => "Parameter 'title' is required",
-			];
+			return new Response(
+				Response::STATUS_BAD_REQUEST,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error' => "Parameter 'title' is required",
+				]
+			);
 		}
 		
 		if (Input::get('year', false) !== false)
@@ -40,10 +44,14 @@ class MoviesProvider
 			}
 			else
 			{
-				return [
-					'success' => false,
-					'error' => "Parameter 'plot' must only be 'short' or 'full'",
-				];
+				return new Response(
+					Response::STATUS_BAD_REQUEST,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => false,
+						'error' => "Parameter 'plot' must only be 'short' or 'full'",
+					]
+				);
 			}
 		}
 		
@@ -53,33 +61,49 @@ class MoviesProvider
 			
 			if ($response['status_code'] != 200)
 			{
-				return [
-					'success' => false,
-					'error' => "API response status code " . $response['status_code'],
-				];
+				return new Response(
+					Response::STATUS_OK,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => false,
+						'error' => "Remote API response status code " . $response['status_code'],
+					]
+				);
 			}
 		}
 		catch (RequestsInvalidJSONException $e)
 		{
-			return [
-				'success' => false,
-				'error' => "Response content not valid JSON",
-			];
+			return new Response(
+				Response::STATUS_OK,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error' => "Remote API response content not valid JSON",
+				]
+			);
 		}
 		
 		$content = $response['content'];
 		if ($content['Response'] === "False")
 		{
-			return [
-				'success' => false,
-				'error'   => "API response: " . $content['Error'],
-			];
+			return new Response(
+				Response::STATUS_OK,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => "API response: " . $content['Error'],
+				]
+			);
 		}
 		
-		return [
-			'success' => true,
-			'response' => $content,
-		];
+		return new Response(
+			Response::STATUS_OK,
+			Response::CONTENT_TYPE_JSON,
+			[
+				'success' => true,
+				'response' => $content,
+			]
+		);
 	}	
 	
 }

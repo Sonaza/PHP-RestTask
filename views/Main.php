@@ -46,37 +46,46 @@
 	<hr>
 	
 	<?php if (!is_null($jwt_token)): ?>
+		
+		<form action="?" method="get">
 	
-		<h2>JWT Web Token</h2>
-		<p>
-			Requesting a JWT web token for API authorization.
-		</p>
-		<p class="api">
-			POST request to <code><?= $base_endpoint_url; ?>/login</code> with <code>username</code> and <code>password</code> fields. Testing with values <code><?= $jwt_username; ?></code> and <code><?= $jwt_password; ?></code>.
-		</p>
-		<pre><?= $jwt_token; ?></pre>
+			<h2>JWT Web Token</h2>
+			<p>
+				Requesting a JWT web token for API authorization.
+			</p>
+			<p class="api">
+				POST request to <code><?= $base_endpoint_url; ?>/login</code> with <code>username</code> and <code>password</code> fields. Testing with values <code><?= $jwt_username; ?></code> and <code><?= $jwt_password; ?></code>.
+			</p>
+			<pre><?= $jwt_token; ?></pre>
+			
+			<hr>
+			
+			<h2>Books API</h2>
+			<p>
+				Requesting a book with ISBN <input type="text" name="isbn" value="<?= $books_isbn; ?>"> <input type="submit" value="Request">
+			</p>
+			<p class="api">
+				GET request to <code><?= $base_endpoint_url; ?>/getBook?isbn=<?= $books_isbn; ?></code>. JWT required as bearer token in Authorization header.
+			</p>
+			<pre><?= $books_response; ?></pre>
+			
+			<hr>
+			
+			<h2>Movies API</h2>
+			<p>
+				Requesting a movie titled <input type="text" name="title" value="<?= $movies_title; ?>">
+				released in <input type="text" name="year" value="<?= $movies_year; ?>">
+				with <select name="plot">
+					<option value="full" <?= $movies_plot == 'full' ? 'selected' : '' ?>>full</option>
+					<option value="short" <?= $movies_plot == 'short' ? 'selected' : '' ?>>short</option>
+				</select> plot synopsis. <input type="submit" value="Request">
+			</p>
+			<p class="api">
+				GET request to <code><?= $base_endpoint_url; ?>/getMovie?title=<?= $movies_title; ?>&amp;year=<?= $movies_year; ?>&amp;plot=<?= $movies_plot; ?></code>. JWT required as bearer token in Authorization header.
+			</p>
+			<pre><?= $movies_response; ?></pre>
 		
-		<hr>
-		
-		<h2>Books API</h2>
-		<p>
-			Requesting a book with ISBN <b><?= $books_isbn; ?></b>.
-		</p>
-		<p class="api">
-			GET request to <code><?= $base_endpoint_url; ?>/getBook?isbn=<?= $books_isbn; ?></code>. JWT required as bearer token in Authorization header.
-		</p>
-		<pre><?= $books_response; ?></pre>
-		
-		<hr>
-		
-		<h2>Movies API</h2>
-		<p>
-			Requesting a movie titled <b><?= $movies_title; ?></b> released in <b><?= $movies_year; ?></b> with <b><?= $movies_plot; ?></b> plot synopsis.
-		</p>
-		<p class="api">
-			GET request to <code><?= $base_endpoint_url; ?>/getMovie?title=<?= $movies_title; ?>&amp;year=<?= $movies_year; ?>&amp;plot=<?= $movies_plot; ?></code>. JWT required as bearer token in Authorization header.
-		</p>
-		<pre><?= $movies_response; ?></pre>
+		</form>
 		
 	<?php else: ?>
 		

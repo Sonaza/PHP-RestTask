@@ -48,7 +48,7 @@ class Client
 		return $response['content']['token'];
 	}
 	
-	private function make_data_query(string $request_url, array $request_data, string $jwt_token)
+	private function make_data_query(string $request_url, array $request_data, string $jwt_token): string
 	{
 		$request_headers = [
 			'Authorization: Bearer ' . $jwt_token,
@@ -65,13 +65,13 @@ class Client
 		
 		if ($response['content']['success'] === false)
 		{
-			return "Error: ". $response['error'];
+			return "Error: ". $response['content']['error'];
 		}
 		
 		return json_encode($response['content'], JSON_PRETTY_PRINT);
 	}
 	
-	public function run()
+	public function run(): Response
 	{
 		$data = [
 			'base_endpoint_url' => $this->base_endpoint_url,
@@ -80,12 +80,12 @@ class Client
 			'jwt_username'    => 'testuser',
 			'jwt_password'    => 'password',
 			
-			'books_isbn'      => '9780330508117',
+			'books_isbn'      => Input::get('isbn', '9780330508117'),
 			'books_response'  => '',
 			
-			'movies_title'    => 'Iron Sky',
-			'movies_year'     => '2012',
-			'movies_plot'     => 'full',
+			'movies_title'    => Input::get('title', 'Iron Sky'),
+			'movies_year'     => Input::get('year', '2012'),
+			'movies_plot'     => Input::get('plot', 'full'),
 			'movies_response' => '',
 		];
 		
@@ -94,14 +94,14 @@ class Client
 		// If auth token could not be obtained then making the requests won't be possible.
 		if (!is_null($data['jwt_token']))
 		{
-			// Retrieve book info by ISBN
+			// Retrieve book info by ISBN.
 			$request_url = $this->base_endpoint_url . "/getBook";
 			$request_data = [
 				'isbn' => $data['books_isbn'],
 			];
 			$data['books_response'] = $this->make_data_query($request_url, $request_data, $data['jwt_token']);
 			
-			// Retrieve movie info by title and year,
+			// Retrieve movie info by title and year.
 			$request_url = $this->base_endpoint_url . "/getMovie";
 			$request_data = [
 				'title' => $data['movies_title'],
@@ -111,10 +111,14 @@ class Client
 			$data['movies_response'] = $this->make_data_query($request_url, $request_data, $data['jwt_token']);
 		}
 		
-		header("Content-type: text/html; charset=utf-8");
-		View::display("Main.php", $data);
+		return new Response(
+			Response::STATUS_OK,
+			Response::CONTENT_TYPE_HTML,
+			View::load("Main.php", $data)
+		);
 	}
 }
 
 $client = new Client();
-$client->run();
+$response = $client->run();
+$response->output();

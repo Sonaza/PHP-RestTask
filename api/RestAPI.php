@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+class RestProviderFileNotFoundException extends Exception {}
 class RestProviderInvalidMethodException extends Exception {}
+class RestProviderMethodNotFoundException extends Exception {}
+class RestProviderMethodCallFailedException extends Exception {}
 class RestProviderInvalidNumberOfArgumentsException extends Exception {}
 
-class RestAPICore
+class RestAPI
 {
 	const VALID_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 	
@@ -20,22 +23,32 @@ class RestAPICore
 	{
 		if (stripos($class_name, 'Provider') !== false)
 		{
-			require_once __DIR__ . "/providers/" . $class_name . ".php";
+			if (file_exists(__DIR__ . "/providers/" . $class_name . ".php"))
+			{
+				require_once __DIR__ . "/providers/" . $class_name . ".php";
+			}	
+			else
+			{
+				throw new RestProviderFileNotFoundException("Failed to autoload provider class '$class_name', file not found.");
+			}
 		}
 	}
 	
-	public function route(): array
+	public function route(): Response
 	{
 		$http_method = $_SERVER['REQUEST_METHOD'];
 		
 		// Not found if no known registered route supports this HTTP method
 		if (!array_key_exists($http_method, $this->registered_routes))
 		{
-			http_response_code(404);
-			return [
-				'success' => false,
-				'error'   => 'Not found.',
-			];
+			return new Response(
+				Response::STATUS_NOT_FOUND,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => 'Not found.',
+				]
+			);
 		}
 		
 		// Retrieve request URI and split it into segments.
@@ -48,11 +61,14 @@ class RestAPICore
 		// Verify the path is registered.
 		if (!array_key_exists($route_path, $this->registered_routes[$http_method]))
 		{
-			http_response_code(404);
-			return [
-				'success' => false,
-				'error'   => 'Not found.',
-			];
+			return new Response(
+				Response::STATUS_NOT_FOUND,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => 'Not found.',
+				]
+			);
 		}
 		
 		// If an auth method is defined this route will require authorization.
@@ -66,28 +82,59 @@ class RestAPICore
 				$has_authorization = $this->call_provider_method($this->registered_routes[$http_method][$route_path]['auth_method']);
 				if (!$has_authorization)
 				{
-					http_response_code(401);
-					return [
-						'success' => false,
-						'error'   => 'Unauthorized.',
-					];
+					return new Response(
+						Response::STATUS_UNAUTHORIZED,
+						Response::CONTENT_TYPE_JSON,
+						[
+							'success' => false,
+							'error'   => 'Unauthorized.',
+						]
+					);
 				}
 			}
 			catch (RestProviderInvalidMethodException $e)
 			{
-				http_response_code(500);
-				return [
-					'success' => false,
-					'error'   => 'Invalid authorization method.',
-				];
+				return new Response(
+					Response::STATUS_SERVER_ERROR,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => false,
+						'error'   => 'Invalid authorization method.',
+					]
+				);
+			}
+			catch (RestProviderMethodNotFoundException $e)
+			{
+				return new Response(
+					Response::STATUS_SERVER_ERROR,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => false,
+						'error'   => 'Authorization method not found in class.',
+					]
+				);
 			}
 			catch (RestProviderInvalidNumberOfArgumentsException $e)
 			{
-				http_response_code(400);
-				return [
-					'success' => false,
-					'error'   => 'Invalid number of arguments for authorization method.',
-				];
+				return new Response(
+					Response::STATUS_BAD_REQUEST,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => false,
+						'error'   => 'Invalid number of arguments for authorization method.',
+					]
+				);
+			}
+			catch (RestProviderMethodCallFailedException $e)
+			{
+				return new Response(
+					Response::STATUS_SERVER_ERROR,
+					Response::CONTENT_TYPE_JSON,
+					[
+						'success' => false,
+						'error'   => 'Authorization method call failed.',
+					]
+				);
 			}
 		}
 		
@@ -98,33 +145,64 @@ class RestAPICore
 		}
 		catch (RestProviderInvalidMethodException $e)
 		{
-			http_response_code(500);
-			return [
-				'success' => false,
-				'error'   => 'Invalid method.',
-			];
+			return new Response(
+				Response::STATUS_SERVER_ERROR,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => 'Invalid method.',
+				]
+			);
+		}
+		catch (RestProviderMethodNotFoundException $e)
+		{
+			return new Response(
+				Response::STATUS_SERVER_ERROR,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => 'Method not found in class.',
+				]
+			);
 		}
 		catch (RestProviderInvalidNumberOfArgumentsException $e)
 		{
-			http_response_code(400);
-			return [
-				'success' => false,
-				'error'   => 'Invalid number of arguments.',
-			];
+			return new Response(
+				Response::STATUS_BAD_REQUEST,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => 'Invalid number of arguments for method.',
+				]
+			);
+		}
+		catch (RestProviderMethodCallFailedException $e)
+		{
+			return new Response(
+				Response::STATUS_SERVER_ERROR,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error'   => 'Method call failed.',
+				]
+			);
 		}
 		
 		// Something has gone horribly wrong and normally this should not happen.
-		http_response_code(500);
-		return [
-			'success' => false,
-			'error'   => 'Unknown error.',
-		];
+		return new Response(
+			Response::STATUS_SERVER_ERROR,
+			Response::CONTENT_TYPE_JSON,
+			[
+				'success' => false,
+				'error'   => 'Unknown error.',
+			]
+		);
 	}
 	
 	public function add_endpoint(string $http_method, string $route_path,
 	                             string $provider_method, ?string $auth_provider_method = null): bool
 	{
-		if (!in_array($http_method, RestAPICore::VALID_METHODS))
+		if (!in_array($http_method, RestAPI::VALID_METHODS))
 			return false;
 		
 		// Verify the method string is valid (with class and method name)
@@ -151,12 +229,8 @@ class RestAPICore
 		if (!preg_match('/([\w]*)@([\w]*)/', $method_string, $matches))
 			return false;
 		
-		// Passing the matched capture groups if requested by caller
-		if (!is_null($class_name) && !is_null($method_name))
-		{
-			$class_name = $matches[1];
-			$method_name = $matches[2];
-		}
+		$class_name = $matches[1];
+		$method_name = $matches[2];
 		
 		return true;
 	}
@@ -172,8 +246,17 @@ class RestAPICore
 			throw new RestProviderInvalidMethodException("Provider class/method not defined.");
 		}
 		
-		// Use reflection to retrieve method parameter count from the class
-		$reflection_method = new ReflectionMethod($provider_class, $class_method_name);
+		try
+		{
+			// Reflection will trigger an autoload and verify the method exists.
+			$reflection_method = new ReflectionMethod($provider_class, $class_method_name);
+		}
+		catch (ReflectionException $e)
+		{
+			throw new RestProviderMethodNotFoundException("Method not found: " . $e);
+		}
+		
+		// Verify numbers of arguments with reflection
 		$num_paremeters = count($arguments);
 		if ($num_paremeters < $reflection_method->getNumberOfRequiredParameters() ||
 			$num_paremeters > $reflection_method->getNumberOfParameters())
@@ -181,9 +264,16 @@ class RestAPICore
 			throw new RestProviderInvalidNumberOfArgumentsException("Invalid number of arguments.");
 		}
 		
-		// Create a new instance of the class and call the method
-		$provider_instance = new $provider_class();
-		return call_user_func_array([$provider_instance, $class_method_name], $arguments);
+		try
+		{
+			// Create a new instance of the class and call the method
+			$provider_instance = new $provider_class();
+			return $reflection_method->invokeArgs($provider_instance, $arguments);
+		}
+		catch (ReflectionException $e)
+		{
+			throw new RestProviderMethodCallFailedException("Failed to call provider method: " . $e);
+		}
 	}
 	
 	

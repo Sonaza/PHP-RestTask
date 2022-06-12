@@ -7,24 +7,32 @@ class BooksProvider
 	
 	const BASE_ENDPOINT_URL = 'https://openlibrary.org';
 	
-	public function get_book(): array
+	public function get_book(): Response
 	{
 		$isbn = Input::get('isbn', false);
 		if ($isbn === false)
 		{
-			return [
-				'success' => false,
-				'error' => "Parameter 'isbn' is required",
-			];
+			return new Response(
+				Response::STATUS_BAD_REQUEST,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error' => "Parameter 'isbn' is required",
+				]
+			);
 		}
 		
 		$isbn = $this->normalize_isbn($isbn);
 		if (!$this->is_valid_isbn($isbn))
 		{
-			return [
-				'success' => false,
-				'error' => "Supplied ISBN is not valid.",
-			];
+			return new Response(
+				Response::STATUS_BAD_REQUEST,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error' => "Supplied ISBN is not valid.",
+				]
+			);
 		}
 		
 		$url = BooksProvider::BASE_ENDPOINT_URL . '/isbn/' . $isbn . '.json';
@@ -35,18 +43,26 @@ class BooksProvider
 		}
 		catch (RequestsInvalidJSONException $e)
 		{
-			return [
-				'success' => false,
-				'error' => "Response content not valid JSON",
-			];
+			return new Response(
+				Response::STATUS_OK,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error' => "Remote API response content not valid JSON",
+				]
+			);
 		}
 		
 		if ($response['status_code'] != 200)
 		{
-			return [
-				'success' => false,
-				'error' => "API response status code " . $response['status_code'],
-			];
+			return new Response(
+				Response::STATUS_OK,
+				Response::CONTENT_TYPE_JSON,
+				[
+					'success' => false,
+					'error' => "Remote API response status code " . $response['status_code'],
+				]
+			);
 		}
 		
 		$book_info = $response['content'];
@@ -88,10 +104,14 @@ class BooksProvider
 				}
 				else
 				{
-					return [
-						'success' => false,
-						'error' => "Failed to retrieve book authors information: " . $author_response['error'],
-					];
+					return new Response(
+						Response::STATUS_OK,
+						Response::CONTENT_TYPE_JSON,
+						[
+							'success' => false,
+							'error' => "Failed to retrieve book authors information: " . $author_response['error'],
+						]
+					);
 				}
 			}
 		}
@@ -124,18 +144,26 @@ class BooksProvider
 				}
 				else
 				{
-					return [
-						'success' => false,
-						'error' => "Failed to retrieve book works information: " . $author_response['error'],
-					];
+					return new Response(
+						Response::STATUS_OK,
+						Response::CONTENT_TYPE_JSON,
+						[
+							'success' => false,
+							'error' => "Failed to retrieve book works information: " . $author_response['error'],
+						]
+					);
 				}
 			}
 		}
 		
-		return [
-			'success'  => true,
-			'response' => $book_info,
-		];
+		return new Response(
+			Response::STATUS_OK,
+			Response::CONTENT_TYPE_JSON,
+			[
+				'success'  => true,
+				'response' => $book_info,
+			]
+		);
 	}
 	
 	private function normalize_isbn(string $isbn): string

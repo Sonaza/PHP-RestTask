@@ -11,7 +11,7 @@ class Application
 	
 	public function __construct()
 	{
-		$this->restAPI = new RestAPICore();
+		$this->restAPI = new RestAPI();
 		
 		$this->restAPI->add_endpoint("POST", "login", "AuthProvider@post_login");
 
@@ -21,10 +21,8 @@ class Application
 	
 	public function run()
 	{
-		header("Content-type: application/json");
-		
 		$response = $this->restAPI->route();
-		echo json_encode($response);
+		$response->output();
 	}
 	
 }
