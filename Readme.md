@@ -1,5 +1,5 @@
 
-# Lamia Task Simple REST API
+# Simple REST API
 
 ### Task Description:
 
